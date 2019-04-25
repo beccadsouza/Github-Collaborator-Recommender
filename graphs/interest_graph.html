@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>Interest Graph</title>
+        <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+        <style>
+            .link {stroke: #ccc;}
+            .node text {
+                pointer-events: none;
+                font: 10px sans-serif;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div id="chart"></div>
+        <script type="text/javascript" src="http://d3js.org/d3.v2.min.js?2.9.3"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+        <script>
+
+
+            let width = 1500, height = 1000, fill = d3.scale.category20();
+            let svg = d3.select("body").append("svg").attr("width", width).attr("height", height);
+            let force = d3.layout.force().gravity(.05).distance(100).charge(-100).size([width, height]);
+
+            function jsonCallback(json){
+
+                let graph = json, nodes = [], links = [],i,j;
+
+                for(i = 0;i<graph.nodes.length;i++) nodes.push(graph.nodes[i]);
+                for(i = 0;i<graph.links.length;i++) links.push(graph.links[i]);
+                for(i = 0;i< links.length;i++){
+                    for(j = 0;j< nodes.length;j++) {
+                        if (links[i].source === nodes[j].id) links[i].source = j;
+                        if (links[i].target === nodes[j].id) links[i].target = j;
+                    }
+                }
+
+                force.nodes(nodes).links(links).start();
+
+                let link = svg.selectAll(".link").data(links).enter().append("line").attr("class", "link");
+                let node = svg.selectAll(".node").data(nodes).enter().append("g").attr("class", "node").call(force.drag);
+                let color = d3.scale.category20();
+
+                node.append("circle").attr("r", 8).style("fill", function(d,i) { return color(i%2); });
+                // node.append("circle").attr("r", 8).style("fill",function(d,i){return color(i);});
+
+                node.append("text").attr("dx", 12).attr("dy", ".35em").text(function(d) { console.log(i); return d.id });
+
+                force.on("tick", function() {
+                    link
+                    .attr("x1", function(d) { return d.source.x; })
+                    .attr("y1", function(d) { return d.source.y; })
+                    .attr("x2", function(d) { return d.target.x; })
+                    .attr("y2", function(d) { return d.target.y; });
+                    node
+                    .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
+                });
+
+            }
+
+            $.ajax({url: "http://0.0.0.0:8000/graphs/interest_graph.json",dataType: "jsonp"});
+        </script>
+    </body>
+</html>
